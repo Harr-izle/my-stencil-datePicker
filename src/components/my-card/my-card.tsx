@@ -1,4 +1,10 @@
-import { Component, h, State, Event, EventEmitter, Listen } from "@stencil/core";
+import { Component, h, State, Event, EventEmitter, Listen, JSX } from "@stencil/core";
+
+interface DayProps {
+    day: number;
+    isSelected: boolean;
+    isEmpty?: boolean;
+}
 
 @Component({
     tag: 'my-card',
@@ -24,26 +30,26 @@ export class MyCard {
         return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     }
 
-    private getYearsList(): number[] {
-        const currentYear = new Date().getFullYear();
-        const years = [];
-        for (let i = currentYear - this.yearsToShow; i <= currentYear; i++) {
+    private getYearsList(): Array<number> {
+        const currentYear: number = new Date().getFullYear();
+        const years: Array<number> = [];
+        for (let i: number = currentYear - this.yearsToShow; i <= currentYear; i++) {
             years.push(i);
         }
         return years;
     }
 
-    private handleDateClick(day: number) {
+    private handleDateClick(day: number): void {
         this.selectedDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), day);
         this.dateSelected.emit(this.selectedDate);
     }
 
-    private handleYearClick(year: number) {
+    private handleYearClick(year: number): void {
         this.currentDate = new Date(year, this.currentDate.getMonth(), 1);
         this.yearDropdownOpen = false;
     }
 
-    private changeMonth(increment: number) {
+    private changeMonth(increment: number): void {
         this.currentDate = new Date(
             this.currentDate.getFullYear(),
             this.currentDate.getMonth() + increment,
@@ -51,41 +57,48 @@ export class MyCard {
         );
     }
 
-    private toggleYearDropdown(event: Event) {
+    private toggleYearDropdown(event: Event): void {
         event.stopPropagation();
         this.yearDropdownOpen = !this.yearDropdownOpen;
     }
 
     @Listen('click', { target: 'window' })
-    handleClickOutside(event: Event) {
+    handleClickOutside(event: Event): void {
         const target = event.target as HTMLElement;
         if (!target.closest('.year-selector')) {
             this.yearDropdownOpen = false;
         }
     }
 
-    render() {
-        const daysInMonth = this.getDaysInMonth(this.currentDate);
-        const firstDay = this.getFirstDayOfMonth(this.currentDate);
-        const days = [];
+    private renderDay({ day, isSelected, isEmpty = false }: DayProps): JSX.Element {
+        if (isEmpty) {
+            return <div class="day empty"></div>;
+        }
+        return (
+            <div class={`day ${isSelected ? 'selected' : ''}`}
+                 onClick={() => this.handleDateClick(day)}>
+                {day}
+            </div>
+        );
+    }
+
+    render(): JSX.Element {
+        const daysInMonth: number = this.getDaysInMonth(this.currentDate);
+        const firstDay: number = this.getFirstDayOfMonth(this.currentDate);
+        const days: JSX.Element[] = [];
 
         // Add empty cells for days before the first day of the month
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div class="day empty"></div>);
+            days.push(this.renderDay({ day: 0, isSelected: false, isEmpty: true }));
         }
 
         // Add the days of the month
         for (let day = 1; day <= daysInMonth; day++) {
-            const isSelected = this.selectedDate?.getDate() === day && 
+            const isSelected: boolean = this.selectedDate?.getDate() === day && 
                              this.selectedDate?.getMonth() === this.currentDate.getMonth() &&
                              this.selectedDate?.getFullYear() === this.currentDate.getFullYear();
             
-            days.push(
-                <div class={`day ${isSelected ? 'selected' : ''}`}
-                     onClick={() => this.handleDateClick(day)}>
-                    {day}
-                </div>
-            );
+            days.push(this.renderDay({ day, isSelected }));
         }
 
         return (
